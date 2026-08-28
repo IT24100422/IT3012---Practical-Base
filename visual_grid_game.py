@@ -120,7 +120,7 @@ class GridGameGUI:
                                       custom_walls=walls)
 
         # Instantiate the SearchAgent (change 'BFS' to 'DFS' or 'UCS' to test different algorithms)
-        self.agent = SearchAgent(active_algo='BFS')
+        self.agent = SearchAgent(active_algo='AStar')  # Change to 'BFS', 'DFS', or 'UCS' as needed
 
         max_canvas_dim = 400
         self.cell_size = max(20, min(max_canvas_dim // self.env.width, max_canvas_dim // self.env.height))

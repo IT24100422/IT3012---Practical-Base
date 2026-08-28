@@ -1,4 +1,5 @@
 import heapq
+import math
 import random
 from collections import deque
 
@@ -97,6 +98,18 @@ class SearchAgent:
 
         return neighbors
 
+    def manhattan_distance(self, pos, goal):
+        """h(n) = |x1 - x2| + |y1 - y2|"""
+        x1, y1 = pos
+        x2, y2 = goal
+        return abs(x1 - x2) + abs(y1 - y2)
+
+    def euclidean_distance(self, pos, goal):
+        """h(n) = sqrt((x1 - x2)^2 + (y1 - y2)^2)"""
+        x1, y1 = pos
+        x2, y2 = goal
+        return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
     def bfs_search(self, start, goal, grid_size, walls):
         """Breadth-First Search using a FIFO Queue (deque.popleft)."""
         frontier = deque([(start, [])])
@@ -149,6 +162,38 @@ class SearchAgent:
                     heapq.heappush(frontier, (new_cost, counter, next_pos, path + [action]))
         return ['Stay']
 
+    def astar_search(self, start_pos, goal_pos, walls, grid_size, heuristic_type='manhattan'):
+        """A* Search using f(n) = g(n) + h(n)."""
+        heuristic_fn = self.manhattan_distance if heuristic_type == 'manhattan' else self.euclidean_distance
+
+        frontier = []
+        counter = 0
+        g_start = 0
+        h_start = heuristic_fn(start_pos, goal_pos)
+        f_start = g_start + h_start
+        heapq.heappush(frontier, (f_start, g_start, counter, start_pos, []))
+        reached_states = set()
+
+        while frontier:
+            f_cost, g_cost, _, current_pos, path_taken = heapq.heappop(frontier)
+
+            if current_pos == goal_pos:
+                return path_taken
+
+            if current_pos in reached_states:
+                continue
+            reached_states.add(current_pos)
+
+            for action, next_pos in self.get_neighbors(current_pos, grid_size, walls):
+                if next_pos not in reached_states:
+                    g_new = g_cost + 1
+                    h_new = heuristic_fn(next_pos, goal_pos)
+                    f_new = g_new + h_new
+                    counter += 1
+                    heapq.heappush(frontier, (f_new, g_new, counter, next_pos, path_taken + [action]))
+
+        return ['Stay']
+
     def sense_and_act(self, percept: dict) -> str:
         # Step 1.3: Form a complete plan if current plan is empty and food remains
         if not self.plan and percept.get('all_food'):
@@ -166,9 +211,16 @@ class SearchAgent:
                 self.plan = self.dfs_search(start, goal, grid_size, walls)
             elif self.active_algo == 'UCS':
                 self.plan = self.ucs_search(start, goal, grid_size, walls)
+            elif self.active_algo == 'AStar':
+                self.plan = self.astar_search(start, goal, walls, grid_size, heuristic_type='manhattan')
 
         # Step 1.3: Return the first action from the plan
         if self.plan:
             return self.plan.pop(0)
 
         return 'Stay'
+
+#if __name__ == "__main__":
+    #a = SearchAgent()
+    #print(a.manhattan_distance((0, 0), (3, 4)))  # expect 7
+    #print(a.euclidean_distance((0, 0), (3, 4)))  # expect 5.0   
